@@ -1,0 +1,2 @@
+# Vaultwarden-Windows-Binary
+自动构建Vaultwarden的Windows平台二进制文件
