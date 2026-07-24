@@ -1,31 +1,18 @@
-# Vaultwarden Windows Binary
+# Vaultwarden Windows 二进制文件自动构建
 
-[![Build and Release](https://github.com/tangz0v0/Vaultwarden-Windows-Binary/actions/workflows/build-windows.yml/badge.svg)](https://github.com/tangz0v0/Vaultwarden-Windows-Binary/actions/workflows/build-windows.yml)
+自动将 [Vaultwarden](https://github.com/dani-garcia/vaultwarden) 编译为 Windows 可执行文件 (.exe)。
 
-自动构建 Vaultwarden Windows 版本的二进制文件。
+## 版本
 
-## 📦 下载
+- **稳定版**：跟随官方 Release，有新版本自动构建
+- **测试版**：跟随主分支最新代码，检测到修复或功能更新时自动构建
 
-前往 [Releases](https://github.com/tangz0v0/Vaultwarden-Windows-Binary/releases) 页面下载最新版本。
+## 下载
 
-### 版本说明
+前往 [Releases](https://github.com/tangz0v0/Vaultwarden-Windows-Binary/releases) 页面下载。
 
-| Release 类型 | 标签格式 | 说明 |
-|-------------|---------|------|
-| **稳定版** | `vX.X.X-windows` | 基于官方 GitHub Release，稳定可靠 |
-| **测试版** | `testing-xxxxxxx-windows` | 基于主分支最新代码，包含最新修复 |
+## 构建特性
 
-## 🚀 快速使用
-
-1. 从 Releases 下载 `vaultwarden-*.exe` 文件
-2. 将文件放在目标目录
-3. 运行即可（可以注册为 Windows 服务）
-
-### 作为服务运行
-
-```powershell
-# 安装为 Windows 服务
-sc.exe create Vaultwarden binPath="C:\path\to\vaultwarden.exe" start=auto
-
-# 启动服务
-sc.exe start Vaultwarden
+- 静态链接 OpenSSL，无需额外依赖
+- 单文件可执行，开箱即用
+- x64 架构，支持 SQLite
