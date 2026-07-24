@@ -9,7 +9,7 @@
 
 ## 下载
 
-前往 [Releases](https://github.com/tangz0v0/Vaultwarden-Windows-Binary/releases) 页面下载。
+前往 [Releases](https://github.com/tangz0v0/vaultwarden-windows/releases) 页面下载。
 
 ## 构建特性
 
