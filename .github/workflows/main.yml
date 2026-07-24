@@ -339,7 +339,7 @@ jobs:
             ### Build Information
             - **Commit:** ${{ needs.check-versions.outputs.testing_commit }}
             - **Short Commit:** ${{ needs.check-versions.outputs.testing_commit_short }}
-            - **Built:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')
+            - **Built:** ${{ github.event.repository.updated_at }}
             - **Target:** x86_64-pc-windows-msvc
             - **Features:** sqlite
             
