@@ -3,7 +3,7 @@ name: Build and Release Vaultwarden Windows Binaries
 on:
   workflow_dispatch:  # 手动触发
   schedule:
-    - cron: '0 2 * * *'  # 每天凌晨2点自动运行
+    - cron: '0 */12 * * *'  # 每12小时自动运行一次
 
 permissions:
   contents: write
@@ -55,7 +55,7 @@ jobs:
           echo "commit_short=${COMMIT_SHORT}" >> $GITHUB_OUTPUT
           echo "Latest testing commit: ${COMMIT_SHA} (short: ${COMMIT_SHORT})"
 
-      # 1.4 检查测试版是否需要构建（重大更新检测 + 定期构建）
+      # 1.4 检查测试版是否需要构建（commit变化检测 + 平衡策略）
       - name: Check if testing build is needed
         id: check_testing
         run: |
@@ -71,11 +71,11 @@ jobs:
           echo "Latest commit: ${COMMIT_MSG}"
           echo "Commit date: ${COMMIT_DATE}"
           
-          # 定义重大更新的关键词（可以根据需要调整）
-          SIGNIFICANT_KEYWORDS="fix|security|cve|patch|break|change|update|bump|upgrade|feature|add|support|improve|optimize|refactor|new|enhance|resolve|close|issue #[0-9]+"
+          # 平衡策略关键词（包含大多数功能更新）
+          BALANCED_KEYWORDS="fix|security|cve|patch|feature|add|support|improve|update|bump|upgrade"
           
           # 检查是否为重大更新
-          if echo "$COMMIT_MSG" | grep -qiE "$SIGNIFICANT_KEYWORDS"; then
+          if echo "$COMMIT_MSG" | grep -qiE "$BALANCED_KEYWORDS"; then
             echo "🔍 Significant changes detected!"
             IS_SIGNIFICANT=true
           else
@@ -89,28 +89,24 @@ jobs:
           if [ "$RESPONSE" = "200" ]; then
             echo "✅ Release ${TAG} already exists"
             
-            # 获取 Release 创建日期
-            RELEASE_DATE=$(curl -s https://api.github.com/repos/${{ github.repository }}/releases/tags/${TAG} | jq -r .created_at)
-            RELEASE_TIMESTAMP=$(date -d "${RELEASE_DATE}" -u +%s)
-            CURRENT_TIMESTAMP=$(date -u +%s)
+            # 获取当前 Release 对应的 commit
+            RELEASE_COMMIT=$(curl -s https://api.github.com/repos/${{ github.repository }}/releases/tags/${TAG} | jq -r .target_commitish)
             
-            # 计算天数差
-            DAYS_DIFF=$(( ($CURRENT_TIMESTAMP - $RELEASE_TIMESTAMP) / 86400 ))
-            
-            echo "Release created ${DAYS_DIFF} days ago"
+            echo "Release commit: ${RELEASE_COMMIT}"
+            echo "Latest commit: ${COMMIT_SHA}"
             
             # 决策逻辑：
-            # 1. 如果超过7天未构建 → 构建（定期更新）
-            # 2. 如果是重大更新 → 构建
+            # 1. 如果 commit 变化了 → 构建
+            # 2. 如果 commit 没变但平衡策略关键词匹配 → 构建
             # 3. 其他 → 跳过
-            if [ $DAYS_DIFF -ge 7 ]; then
-              echo "🔄 Release is older than 7 days, rebuilding (regular update)"
+            if [ "$RELEASE_COMMIT" != "$COMMIT_SHA" ]; then
+              echo "🔄 Commit changed, rebuilding"
               echo "need_build=true" >> $GITHUB_OUTPUT
             elif [ "$IS_SIGNIFICANT" = true ]; then
-              echo "🔄 Significant changes detected, rebuilding"
+              echo "🔄 Significant changes detected in same commit, rebuilding"
               echo "need_build=true" >> $GITHUB_OUTPUT
             else
-              echo "⏭️ No significant changes and release is recent, skipping"
+              echo "⏭️ No changes and no significant updates, skipping"
               echo "need_build=false" >> $GITHUB_OUTPUT
             fi
           else
