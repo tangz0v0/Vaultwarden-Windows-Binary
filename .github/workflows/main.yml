@@ -138,7 +138,19 @@ jobs:
         shell: powershell
         run: |
           $env:VCPKG_ROOT = "C:\vcpkg"
+          
+          # 更新 vcpkg 到最新版本
+          Write-Host "Updating vcpkg..."
           git -C C:\vcpkg pull
+          git -C C:\vcpkg checkout master
+          
+          # 重新构建 vcpkg.exe（确保版本匹配）
+          Write-Host "Bootstrapping vcpkg..."
+          C:\vcpkg\bootstrap-vcpkg.bat -disableMetrics
+          
+          # 验证版本
+          Write-Host "vcpkg version:"
+          C:\vcpkg\vcpkg.exe version
 
           Write-Host "Installing OpenSSL..."
           C:\vcpkg\vcpkg.exe install openssl:x64-windows-static
@@ -246,7 +258,19 @@ jobs:
         shell: powershell
         run: |
           $env:VCPKG_ROOT = "C:\vcpkg"
+          
+          # 更新 vcpkg 到最新版本
+          Write-Host "Updating vcpkg..."
           git -C C:\vcpkg pull
+          git -C C:\vcpkg checkout master
+          
+          # 重新构建 vcpkg.exe（确保版本匹配）
+          Write-Host "Bootstrapping vcpkg..."
+          C:\vcpkg\bootstrap-vcpkg.bat -disableMetrics
+          
+          # 验证版本
+          Write-Host "vcpkg version:"
+          C:\vcpkg\vcpkg.exe version
 
           Write-Host "Installing OpenSSL..."
           C:\vcpkg\vcpkg.exe install openssl:x64-windows-static
