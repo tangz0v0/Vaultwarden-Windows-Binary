@@ -33,7 +33,7 @@ jobs:
       - name: Check if stable version already built
         id: check_stable
         run: |
-          TAG="${{ steps.get_stable.outputs.version }}-windows"
+          TAG="${{ steps.get_stable.outputs.version }}"
           echo "Checking for existing release: ${TAG}"
           RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" https://api.github.com/repos/${{ github.repository }}/releases/tags/${TAG})
           if [ "$RESPONSE" = "200" ]; then
@@ -59,7 +59,7 @@ jobs:
       - name: Check if testing build is needed
         id: check_testing
         run: |
-          TAG="testing-${{ steps.get_testing.outputs.commit_short }}-windows"
+          TAG="testing-${{ steps.get_testing.outputs.commit_short }}"
           echo "Checking for existing release: ${TAG}"
           
           # 获取最新 commit 的详细信息
@@ -139,13 +139,45 @@ jobs:
         run: |
           $env:VCPKG_ROOT = "C:\vcpkg"
           git -C C:\vcpkg pull
+
+          Write-Host "Installing OpenSSL..."
           C:\vcpkg\vcpkg.exe install openssl:x64-windows-static
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "vcpkg install openssl failed"
+            exit 1
+          }
+
           C:\vcpkg\vcpkg.exe integrate install
+
+          # 验证安装是否成功
+          $libDir = "C:\vcpkg\installed\x64-windows-static\lib"
+          $includeDir = "C:\vcpkg\installed\x64-windows-static\include"
+          
+          Write-Host "Checking installation directories..."
+          Get-ChildItem C:\vcpkg\installed -Recurse -Directory | ForEach-Object { Write-Host $_.FullName }
+          
+          if (-not (Test-Path $libDir)) {
+            Write-Error "OpenSSL library directory missing: $libDir"
+            Write-Host "Contents of installed directory:"
+            Get-ChildItem C:\vcpkg\installed -Recurse | ForEach-Object { Write-Host $_.FullName }
+            exit 1
+          }
+          
+          if (-not (Test-Path "$includeDir\openssl\ssl.h")) {
+            Write-Error "OpenSSL header files missing: $includeDir\openssl\ssl.h"
+            exit 1
+          }
+          
+          Write-Host "✅ OpenSSL installation verified successfully!"
+          Write-Host "  lib dir: $libDir"
+          Write-Host "  include dir: $includeDir"
+
+          # 设置环境变量
           echo "VCPKG_ROOT=C:\vcpkg" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           echo "OPENSSL_STATIC=1" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           echo "OPENSSL_DIR=C:\vcpkg\installed\x64-windows-static" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          echo "OPENSSL_LIB_DIR=C:\vcpkg\installed\x64-windows-static\lib" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          echo "OPENSSL_INCLUDE_DIR=C:\vcpkg\installed\x64-windows-static\include" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          echo "OPENSSL_LIB_DIR=$libDir" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          echo "OPENSSL_INCLUDE_DIR=$includeDir" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
       - name: Cache cargo registry
         uses: actions/cache@v4
@@ -215,13 +247,45 @@ jobs:
         run: |
           $env:VCPKG_ROOT = "C:\vcpkg"
           git -C C:\vcpkg pull
+
+          Write-Host "Installing OpenSSL..."
           C:\vcpkg\vcpkg.exe install openssl:x64-windows-static
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "vcpkg install openssl failed"
+            exit 1
+          }
+
           C:\vcpkg\vcpkg.exe integrate install
+
+          # 验证安装是否成功
+          $libDir = "C:\vcpkg\installed\x64-windows-static\lib"
+          $includeDir = "C:\vcpkg\installed\x64-windows-static\include"
+          
+          Write-Host "Checking installation directories..."
+          Get-ChildItem C:\vcpkg\installed -Recurse -Directory | ForEach-Object { Write-Host $_.FullName }
+          
+          if (-not (Test-Path $libDir)) {
+            Write-Error "OpenSSL library directory missing: $libDir"
+            Write-Host "Contents of installed directory:"
+            Get-ChildItem C:\vcpkg\installed -Recurse | ForEach-Object { Write-Host $_.FullName }
+            exit 1
+          }
+          
+          if (-not (Test-Path "$includeDir\openssl\ssl.h")) {
+            Write-Error "OpenSSL header files missing: $includeDir\openssl\ssl.h"
+            exit 1
+          }
+          
+          Write-Host "✅ OpenSSL installation verified successfully!"
+          Write-Host "  lib dir: $libDir"
+          Write-Host "  include dir: $includeDir"
+
+          # 设置环境变量
           echo "VCPKG_ROOT=C:\vcpkg" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           echo "OPENSSL_STATIC=1" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           echo "OPENSSL_DIR=C:\vcpkg\installed\x64-windows-static" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          echo "OPENSSL_LIB_DIR=C:\vcpkg\installed\x64-windows-static\lib" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-          echo "OPENSSL_INCLUDE_DIR=C:\vcpkg\installed\x64-windows-static\include" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          echo "OPENSSL_LIB_DIR=$libDir" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          echo "OPENSSL_INCLUDE_DIR=$includeDir" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
       - name: Cache cargo registry
         uses: actions/cache@v4
@@ -286,7 +350,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: ${{ needs.check-versions.outputs.stable_version }}-windows
+          tag_name: ${{ needs.check-versions.outputs.stable_version }}
           name: Vaultwarden Windows Binary (Stable) ${{ needs.check-versions.outputs.stable_version }}
           body: |
             ## Vaultwarden Windows Binary - Stable Release
@@ -326,7 +390,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: testing-${{ needs.check-versions.outputs.testing_commit_short }}-windows
+          tag_name: testing-${{ needs.check-versions.outputs.testing_commit_short }}
           name: Vaultwarden Windows Binary (Testing) - ${{ needs.check-versions.outputs.testing_commit_short }}
           body: |
             ## Vaultwarden Windows Binary - Testing Release
@@ -371,7 +435,7 @@ jobs:
           echo "- **Version:** ${{ needs.check-versions.outputs.stable_version }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Status:** ${{ needs.check-versions.outputs.stable_need_build == 'true' && '✅ Built' || '⏭️ Skipped (already exists)' }}" >> $GITHUB_STEP_SUMMARY
           if [ "${{ needs.check-versions.outputs.stable_need_build }}" = "true" ]; then
-            echo "- **Release:** https://github.com/${{ github.repository }}/releases/tag/${{ needs.check-versions.outputs.stable_version }}-windows" >> $GITHUB_STEP_SUMMARY
+            echo "- **Release:** https://github.com/${{ github.repository }}/releases/tag/${{ needs.check-versions.outputs.stable_version }}" >> $GITHUB_STEP_SUMMARY
           fi
           echo "" >> $GITHUB_STEP_SUMMARY
           
@@ -379,7 +443,7 @@ jobs:
           echo "- **Commit:** ${{ needs.check-versions.outputs.testing_commit_short }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Status:** ${{ needs.check-versions.outputs.testing_need_build == 'true' && '✅ Built' || '⏭️ Skipped (not needed)' }}" >> $GITHUB_STEP_SUMMARY
           if [ "${{ needs.check-versions.outputs.testing_need_build }}" = "true" ]; then
-            echo "- **Release:** https://github.com/${{ github.repository }}/releases/tag/testing-${{ needs.check-versions.outputs.testing_commit_short }}-windows" >> $GITHUB_STEP_SUMMARY
+            echo "- **Release:** https://github.com/${{ github.repository }}/releases/tag/testing-${{ needs.check-versions.outputs.testing_commit_short }}" >> $GITHUB_STEP_SUMMARY
           fi
           echo "" >> $GITHUB_STEP_SUMMARY
           
